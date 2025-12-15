@@ -1,91 +1,162 @@
-# P1_SO1_202201336# Proyecto 1 – Sistemas Operativos 1  
-## Monitoreo y Gestión Inteligente de Procesos y Contenedores en Linux
-
-Universidad de San Carlos de Guatemala  
-Facultad de Ingeniería  
-Ingeniería en Ciencias y Sistemas  
+# Proyecto 1 – Sistemas Operativos 1  
+**Monitoreo de Recursos del Sistema y Contenedores Docker**
 
 ---
 
-## 📌 Descripción General
+## 📌 Descripción general
 
-Este proyecto implementa un sistema integral de monitoreo, análisis y gestión automática de procesos del sistema operativo y contenedores Docker en Linux.  
-La solución combina programación a bajo nivel mediante módulos de kernel en C y programación a alto nivel utilizando un daemon desarrollado en Go, con visualización de métricas a través de Grafana.
+Este proyecto implementa un sistema de monitoreo de recursos a nivel de sistema operativo, integrando componentes en **kernel-space** y **user-space**. El sistema permite recolectar métricas del sistema y de procesos asociados a contenedores Docker, almacenarlas de forma persistente y visualizarlas mediante dashboards en Grafana.
 
-La información es recolectada directamente desde el kernel, expuesta mediante el sistema de archivos `/proc`, procesada en espacio de usuario y utilizada para la toma de decisiones automáticas que garantizan la estabilidad del sistema.
-
----
-
-## 🎯 Objetivo General
-
-Desarrollar un sistema que permita monitorear procesos del sistema y procesos asociados a contenedores Docker, analizar su consumo de recursos y ejecutar acciones automáticas para mantener la estabilidad del sistema.
+La solución combina módulos del kernel de Linux, un daemon desarrollado en Go, una base de datos SQLite y Grafana como herramienta de visualización.
 
 ---
 
-## 🎯 Objetivos Específicos
+## 🎯 Objetivo del proyecto
 
-- Desarrollar módulos de kernel funcionales en C.
-- Extraer métricas de procesos directamente desde el kernel.
-- Exponer información mediante archivos virtuales en `/proc`.
-- Desarrollar un daemon en Go para el análisis de métricas.
-- Implementar decisiones automáticas para la gestión de contenedores.
-- Persistir información histórica utilizando SQLite.
-- Visualizar métricas mediante dashboards en Grafana.
-- Automatizar la generación de contenedores mediante cronjobs.
+- Obtener métricas globales del sistema (memoria RAM).
+- Monitorear procesos asociados a contenedores Docker.
+- Calcular uso de CPU y RAM por contenedor.
+- Persistir información histórica para análisis.
+- Visualizar métricas y eventos en tiempo real.
+- Aplicar acciones automáticas sobre contenedores que excedan umbrales definidos.
 
 ---
 
-## 🧠 Arquitectura del Sistema
+## 🧱 Arquitectura del sistema
 
-El sistema está compuesto por los siguientes componentes:
+El sistema está compuesto por cuatro capas claramente diferenciadas:
 
-1. **Módulos de Kernel**
-   - Módulo de procesos de contenedores
-   - Módulo de procesos del sistema
+1. **Módulos del Kernel (C)**  
+   Exponen información del sistema y de procesos mediante archivos en `/proc`.
 
-2. **Daemon en Go**
-   - Lectura y parseo de archivos `/proc`
-   - Análisis de métricas
-   - Gestión automática de contenedores
-   - Registro de eventos en SQLite
+2. **Daemon en Go (User Space)**  
+   Consume la información del kernel, detecta contenedores Docker, calcula métricas dinámicas y persiste los datos.
 
-3. **Cronjob**
-   - Generación automática de contenedores cada minuto
+3. **Base de Datos SQLite**  
+   Almacena métricas del sistema, métricas por contenedor y eventos generados por el sistema.
 
-4. **Grafana**
-   - Visualización de métricas históricas y en tiempo real
+4. **Grafana**  
+   Consulta la base de datos y presenta dashboards interactivos para el análisis visual.
+
+<!-- IMAGEN: Diagrama de arquitectura general del sistema -->
 
 ---
 
-## 📁 Estructura del Repositorio
+## 🧩 Componentes principales
 
-```text
-proyecto-1/
-├── modulo-kernel/
-│   ├── continfo/
-│   │   ├── continfo.c
-│   │   └── Makefile
-│   ├── sysinfo/
-│   │   ├── sysinfo.c
-│   │   └── Makefile
-│
-├── go-daemon/
-│   ├── main.go
-│   ├── parser.go
-│   ├── analyzer.go
-│   ├── docker_manager.go
-│   ├── database.go
-│   └── cron.go
-│
-├── bash/
-│   ├── load_modules.sh
-│   ├── unload_modules.sh
-│   └── generate_containers.sh
-│
-├── dashboard/
-│   ├── docker-compose.yml
-│   └── grafana/
-│
-└── documentacion/
-    ├── manual_tecnico.md
-    └── manual_usuario.md
+### 🔹 Módulos del kernel
+- **sys_info.c**  
+  Expone métricas globales de memoria RAM del sistema.
+
+- **cont_info.c**  
+  Expone información de procesos de usuario (PID, RSS, VSZ y porcentaje de RAM).
+
+### 🔹 Daemon en Go
+- Lee información desde `/proc`.
+- Detecta contenedores Docker mediante `cgroup`.
+- Calcula uso de CPU por proceso.
+- Aplica umbrales y acciones automáticas (WARN, STOP, KILL).
+- Inserta métricas en SQLite.
+
+### 🔹 Persistencia y visualización
+- **SQLite** con modo WAL para concurrencia.
+- **Grafana** como plataforma de visualización en modo solo lectura.
+
+---
+
+## 📊 Métricas visualizadas
+
+El dashboard principal presenta las siguientes métricas:
+
+- Memoria RAM total del sistema
+- Memoria RAM libre
+- Memoria RAM usada
+- Uso de RAM a lo largo del tiempo
+- Uso de CPU a lo largo del tiempo
+- Top 5 contenedores con mayor uso de RAM
+- Top 5 contenedores con mayor uso de CPU
+- Contenedores eliminados a lo largo del tiempo
+
+---
+
+## 📘 Manual Técnico
+
+El **Manual Técnico** describe en detalle la implementación interna del sistema y está dirigido a desarrolladores o evaluadores técnicos.
+
+Incluye:
+
+- Diseño de los módulos del kernel.
+- Comunicación mediante `/proc`.
+- Arquitectura del daemon en Go.
+- Cálculo de métricas de CPU y RAM.
+- Modelo de datos en SQLite.
+- Manejo de concurrencia y consistencia.
+- Integración con Grafana.
+- Limitaciones y mejoras propuestas.
+
+
+---
+
+## 🚀 Ejecución general del proyecto
+
+De forma resumida, el flujo de ejecución es el siguiente:
+
+1. Compilación e inserción de los módulos del kernel.
+2. Ejecución del daemon en Go.
+3. Levantamiento de Grafana mediante Docker Compose.
+4. Acceso al dashboard desde el navegador.
+
+Los pasos detallados se encuentran en el **Manual de Instalación**.
+
+---
+
+## 👤 Manual de Usuario
+
+El **Manual de Usuario** está orientado al uso del sistema desde el punto de vista del usuario final, sin necesidad de conocimientos técnicos avanzados.
+
+Incluye:
+
+- Acceso a Grafana.
+- Descripción del dashboard.
+- Interpretación de cada panel.
+- Uso del rango de tiempo.
+- Visualización de eventos y acciones automáticas.
+
+📄 Archivo:  
+
+
+---
+
+## 🛠 Tecnologías utilizadas
+
+- **Lenguaje C** – Desarrollo de módulos del kernel
+- **Go** – Daemon de monitoreo
+- **SQLite** – Persistencia de datos
+- **Docker / Docker Compose** – Contenerización
+- **Grafana** – Visualización de métricas
+- **Linux /proc** – Comunicación kernel ↔ user-space
+
+---
+
+## ⚠️ Alcance y consideraciones
+
+- El proyecto está diseñado con fines académicos.
+- Las métricas de CPU se calculan mediante muestreo temporal.
+- El porcentaje de RAM se calcula respecto al total del sistema.
+- SQLite es adecuado para el alcance del proyecto, pero no para entornos productivos de alta carga.
+
+---
+
+## 📄 Documentación incluida
+
+- `README.md`
+- `MANUAL_INSTALACION.md`
+- `MANUAL_USUARIO.md`
+- `MANUAL_TECNICO.md`
+
+---
+
+## ✅ Conclusión
+
+El proyecto demuestra la integración de conceptos fundamentales de Sistemas Operativos, como monitoreo de procesos, gestión de memoria, comunicación kernel–user space y concurrencia. La solución implementada es funcional, modular y cumple con los requerimientos establecidos en el enunciado del curso.
+
