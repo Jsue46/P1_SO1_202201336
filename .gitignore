@@ -1,0 +1,14 @@
+# Docker / Grafana data
+docker/data/
+docker/grafana/
+
+# Bases de datos
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs y archivos generados
+*.log
+*.csv
+*.pdf
+*.png

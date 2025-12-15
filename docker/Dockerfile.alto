@@ -1,0 +1,5 @@
+FROM ubuntu:22.04
+
+RUN apt update && apt install -y stress-ng
+
+CMD ["stress-ng", "--vm", "1", "--vm-bytes", "400M", "--cpu", "2", "--timeout", "60s"]

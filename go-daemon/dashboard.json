@@ -1,0 +1,37 @@
+{
+  "title": "SO1 Containers Monitoring",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Consumo de RAM (%)",
+      "targets": [
+        {
+          "datasource": "SQLite",
+          "rawSql": "SELECT timestamp, ram_percent as value FROM metrics ORDER BY timestamp"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Uso de CPU (%)",
+      "targets": [
+        {
+          "datasource": "SQLite",
+          "rawSql": "SELECT timestamp, cpu_percent as value FROM metrics ORDER BY timestamp"
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "title": "Eventos (Warn / Stop / Kill)",
+      "targets": [
+        {
+          "datasource": "SQLite",
+          "rawSql": "SELECT timestamp, container_id, action, ram_percent, cpu_percent FROM events ORDER BY timestamp DESC"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "version": 1
+}
